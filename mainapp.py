@@ -95,9 +95,15 @@ def main():
 
     st.title('Tłumacz')
     st.write('\n')
+    
+    st.markdown('''<style>body {padding: 10px;} .stAudio {height: 45px;} .css-1egvi7u {margin-top: -3rem;} .css-v37k9u a {color: #ff4c4b;}</style>''',
+                 unsafe_allow_html=True)
 
-    og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 39)
-    output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
+
+    with st.sidebar:
+        st.title("Ustawienia językowe")
+        og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 38)
+        output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
 
     wav_audio_data = st_audiorec()
 
@@ -107,11 +113,11 @@ def main():
     
 
     if wav_audio_data is not None:
+        st.write('**Original Text:**')
+        st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
+        st.write('**Translation:**')
+        st.write(translate(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
 
-        st.write('Oryginalny tekst:\n')
-        st.write(transcribe(wav_audio_data, lang=langdict[og_lang]))
-        st.write('Tłumaczenie:\n')
-        st.write(translate(wav_audio_data, lang=langdict[output_lang]))
 
 
 if __name__ == '__main__':
