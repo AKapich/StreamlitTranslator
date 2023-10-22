@@ -94,7 +94,7 @@ langdict = language_abbreviations = {
 def main():
 
     st.title('Tłumacz')
-    st.write('\n')
+    st.markdown("---")
     
     st.markdown('''<style>body {padding: 10px;} .stAudio {height: 45px;} .css-1egvi7u {margin-top: -3rem;} .css-v37k9u a {color: #ff4c4b;}</style>''',
                  unsafe_allow_html=True)
@@ -104,6 +104,8 @@ def main():
         st.title("Ustawienia językowe")
         og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 38)
         output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
+        st.markdown("---")
+        st.write("Aplikacja przygotowana przez zespoł #gangsebola")
 
     wav_audio_data = st_audiorec()
 
@@ -111,7 +113,7 @@ def main():
     with col_info:
         st.write('\n')
     
-
+    st.markdown("---")
     if wav_audio_data is not None:
         st.write('**Original Text:**')
         st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
