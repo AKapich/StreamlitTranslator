@@ -1,6 +1,5 @@
 import streamlit as st
-from st_audiorec import st_audiorec
-
+from audio_recorder.streamlit_audio_recorder.st_audiorec import st_audiorec
 from transformers import pipeline
 import torch
 
@@ -10,7 +9,7 @@ import io
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 pipe = pipeline(
-    "automatic-speech-recognition", model="openai/whisper-base", device=device
+    "automatic-speech-recognition", model="openai/whisper-medium", device=device
 )
 
 def transcribe(audio, lang='pl'):
@@ -126,9 +125,11 @@ def main():
     st.markdown("---")
     if wav_audio_data is not None:
         st.write('**Oryginalny tekst:**')
-        st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
-        st.write('**Tłumaczenie:**')
-        st.write(transcribe(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
+        with st.spinner("Transkrybowanie tekstu..."):
+            st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
+        st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
+        with st.spinner("Tłumaczenie tekstu..."):
+            st.write(transcribe(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
 
 
 
