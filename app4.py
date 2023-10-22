@@ -1,5 +1,5 @@
 import streamlit as st
-from audio_recorder.streamlit_audio_recorder.st_audiorec import st_audiorec
+from streamlit_audio_recorder.st_audiorec import st_audiorec
 # import whisper
 import numpy as np
 
