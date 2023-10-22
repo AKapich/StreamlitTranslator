@@ -1,0 +1,5 @@
+streamlit-audiorec
+streamlit
+torch
+transformers
+streamlit-mic-recorder

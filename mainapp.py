@@ -1,24 +1,27 @@
 import streamlit as st
-from st_audiorec import st_audiorec
-
+from audio_recorder.streamlit_audio_recorder.st_audiorec import st_audiorec
 from transformers import pipeline
 import torch
 
+from scipy.io import wavfile
+import numpy as np
+import io
+
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 pipe = pipeline(
-    "automatic-speech-recognition", model="openai/whisper-base", device=device
+    "automatic-speech-recognition", model="openai/whisper-medium", device=device
 )
 
 def transcribe(audio, lang='pl'):
     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "transcribe", "language": f"{lang}"})
     return outputs["text"]
 
-def translate(audio, lang='en'):
-    outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "translate", "language": f"{lang}"})
-    return outputs["text"]
+# def translate(audio, lang='en'):
+#     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "translate", "language": f"{lang}"})
+#     return outputs["text"]
 
 
-st.set_page_config(page_title="streamlit_audio_recorder")
+# st.set_page_config(page_title="streamlit_audio_recorder")
 # Design move app further up and remove top padding
 st.markdown('''<style>.css-1egvi7u {margin-top: -3rem;}</style>''',
             unsafe_allow_html=True)
@@ -94,6 +97,7 @@ langdict = language_abbreviations = {
 def main():
 
     st.title('Tłumacz')
+    option = st.selectbox("Wybierz formę wgrania danych: ", ['Mikrofon', 'Gotowy plik audio [.wav]'], 0)
     st.markdown("---")
     
     st.markdown('''<style>body {padding: 10px;} .stAudio {height: 45px;} .css-1egvi7u {margin-top: -3rem;} .css-v37k9u a {color: #ff4c4b;}</style>''',
@@ -105,20 +109,27 @@ def main():
         og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 38)
         output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
         st.markdown("---")
-        st.write("Aplikacja przygotowana przez zespoł #gangsebola")
+        st.write("Tłumacz stworzony przez #gangsebola")
 
-    wav_audio_data = st_audiorec()
+    if option =='Mikrofon':
+        wav_audio_data = st_audiorec()
+        col_info, col_space = st.columns([0.57, 0.43])
+        with col_info:
+            st.write('\n')
+    else:
+        wav_audio_data = st.file_uploader("Wybierz plik audio", type=["wav"])
+        if wav_audio_data is not None:
+            wav_audio_data = wav_audio_data.read()
 
-    col_info, col_space = st.columns([0.57, 0.43])
-    with col_info:
-        st.write('\n')
-    
+
     st.markdown("---")
     if wav_audio_data is not None:
         st.write('**Oryginalny tekst:**')
-        st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
-        st.write('**Tłumaczenie:**')
-        st.write(translate(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
+        with st.spinner("Transkrybowanie tekstu..."):
+            st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
+        st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
+        with st.spinner("Tłumaczenie tekstu..."):
+            st.write(transcribe(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
 
 
 
