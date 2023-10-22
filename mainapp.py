@@ -115,9 +115,9 @@ def main():
     
     st.markdown("---")
     if wav_audio_data is not None:
-        st.write('**Original Text:**')
+        st.write('**Oryginalny tekst:**')
         st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
-        st.write('**Translation:**')
+        st.write('**Tłumaczenie:**')
         st.write(translate(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
 
 
