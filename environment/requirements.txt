@@ -3,3 +3,6 @@ streamlit
 torch
 transformers
 streamlit-mic-recorder
+gtts
+pydub
+pydub.playback

@@ -2,37 +2,37 @@ import streamlit as st
 from audio_recorder.streamlit_audio_recorder.st_audiorec import st_audiorec
 from transformers import pipeline
 import torch
-
-from scipy.io import wavfile
-import numpy as np
-import io
+from gtts import gTTS
+from pydub import AudioSegment
+from pydub.playback import play
+from io import BytesIO
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 pipe = pipeline(
-    "automatic-speech-recognition", model="openai/whisper-medium", device=device
+    "automatic-speech-recognition", model="openai/whisper-large", device=device
 )
 
 def transcribe(audio, lang='pl'):
     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "transcribe", "language": f"{lang}"})
     return outputs["text"]
 
-# def translate(audio, lang='en'):
-#     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "translate", "language": f"{lang}"})
-#     return outputs["text"]
+
+def text2speech(text, language):
+    tts = gTTS(text, lang=language)
+    audio_stream = BytesIO()
+    tts.write_to_fp(audio_stream)
+    audio_stream.seek(0)
+    play(AudioSegment.from_mp3(audio_stream))
 
 
-# st.set_page_config(page_title="streamlit_audio_recorder")
-# Design move app further up and remove top padding
 st.markdown('''<style>.css-1egvi7u {margin-top: -3rem;}</style>''',
             unsafe_allow_html=True)
-# Design change st.Audio to fixed height of 45 pixels
 st.markdown('''<style>.stAudio {height: 45px;}</style>''',
             unsafe_allow_html=True)
-# # Design change hyperlink href link color
 st.markdown('''<style>.css-v37k9u a {color: #ff4c4b;}</style>''',
-            unsafe_allow_html=True)  # darkmode
+            unsafe_allow_html=True)
 st.markdown('''<style>.css-nlntq9 a {color: #ff4c4b;}</style>''',
-            unsafe_allow_html=True)  # lightmode
+            unsafe_allow_html=True) 
 
 langdict = language_abbreviations = {
 "Afrikaans": "af",
@@ -95,7 +95,6 @@ langdict = language_abbreviations = {
 
 
 def main():
-
     st.title('Tłumacz')
     option = st.selectbox("Wybierz formę wgrania danych: ", ['Mikrofon', 'Gotowy plik audio [.wav]'], 0)
     st.markdown("---")
@@ -109,7 +108,11 @@ def main():
         og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 38)
         output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
         st.markdown("---")
-        st.write("Tłumacz stworzony przez #gangsebola")
+        st.write("Tłumacz stworzony przez:")
+        st.write("[Tymoteusz Kwieciński](https://github.com/Fersoil)")
+        st.write("[Michał Matejczuk](https://github.com/matejczukm)")
+        st.write("[Aleks Kapich](https://github.com/AKapich)")
+        
 
     if option =='Mikrofon':
         wav_audio_data = st_audiorec()
@@ -129,8 +132,9 @@ def main():
             st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
         st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
         with st.spinner("Tłumaczenie tekstu..."):
-            st.write(transcribe(wav_audio_data, lang=langdict[output_lang]), unsafe_allow_html=True)
-
+            translation = transcribe(wav_audio_data, lang=langdict[output_lang])
+            st.write(translation, unsafe_allow_html=True)
+            text2speech(translation, langdict[output_lang])
 
 
 if __name__ == '__main__':
