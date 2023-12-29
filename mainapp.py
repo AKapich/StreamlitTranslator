@@ -17,9 +17,11 @@ def log_in(credentials):
     global LOGGED_IN, USERNAME 
     authenticator = stauth.Authenticate(credentials, 'translator_cookie', 'translator_signature_key', cookie_expiry_days=7)
     name, auth_status, username = authenticator.login("Login", "main")
+    username = username.capitalize()
 
     if auth_status:
         st.success(f"Zalogowany jako {username}")
+        st.sidebar.write(f"Zalogowany jako **{username}**")
         authenticator.logout("Wyloguj", "sidebar")
         USERNAME, LOGGED_IN = username, True
     else:
@@ -29,13 +31,12 @@ def log_in(credentials):
 
 
 def register(file_path, auth_data, usernames, credentials):
-    global LOGGED_IN, USERNAME
     with st.form("Rejestracja"):
         st.write("<p style='font-size: 28px;'>Rejestracja</p>", unsafe_allow_html=True)
         username = st.text_input("Nazwa użytkownika")
         password = st.text_input("Hasło", type="password")
         password2 = st.text_input("Powtórz hasło", type="password")
-        register = st.form_submit_button()
+        register = st.form_submit_button("Zarejestruj się")  # Change the button text here
     if register:
         if password != password2:
             st.error("Podane hasła różnią się od siebie")
@@ -74,25 +75,27 @@ def enter(action):
 
 
 ##### FUNKCJE TŁUMACZENIA #####
-@st.cache_resource()
+@st.cache_resource(show_spinner=False)
 def load_model():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     return pipeline("automatic-speech-recognition", model="openai/whisper-large", device=device)
 pipe = load_model()
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def transcribe(audio, lang='pl'):
     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "transcribe", "language": f"{lang}"})
     return outputs["text"]
 
 
+@st.cache_data(show_spinner=False)
 def text2speech(text, language):
     tts = gTTS(text, lang=language)
     audio_stream = BytesIO()
     tts.write_to_fp(audio_stream)
     audio_stream.seek(0)
-    play(AudioSegment.from_mp3(audio_stream))
+    #play(AudioSegment.from_mp3(audio_stream))
+    return AudioSegment.from_mp3(audio_stream)
 
 
 st.markdown('''<style>.css-1egvi7u {margin-top: -3rem;}</style>''',
@@ -180,8 +183,8 @@ def main():
         output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
         st.markdown("---")
         st.write("Tłumacz stworzony przez:")
-        st.write("[Tymoteusz Kwieciński](https://github.com/Fersoil)")
         st.write("[Aleks Kapich](https://github.com/AKapich)")
+        st.write("[Tymoteusz Kwieciński](https://github.com/Fersoil)")
         st.write("[Michał Matejczuk](https://github.com/matejczukm)")
         
 
@@ -205,7 +208,9 @@ def main():
         with st.spinner("Tłumaczenie tekstu..."):
             translation = transcribe(wav_audio_data, lang=langdict[output_lang])
             st.write(translation, unsafe_allow_html=True)
-            text2speech(translation, langdict[output_lang])
+            sound = text2speech(translation, langdict[output_lang])
+            if st.button('🔊'):
+                play(sound)
 
 
 
@@ -230,3 +235,6 @@ if __name__ == '__main__':
             st.warning("Proszę zalogować się, aby mieć dostęp do historii")
         else:
             st.write('HISTORIA')
+
+
+# TODO z jakiegoś powodu przy wylogowaniu odtwarza się dźwięk
