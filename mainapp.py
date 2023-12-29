@@ -7,10 +7,33 @@ from pydub import AudioSegment
 from pydub.playback import play
 from io import BytesIO
 import streamlit as st
+import datetime as dt
+import  streamlit_toggle as tog
 
 import streamlit_authenticator as stauth
-import pickle
+import sqlite3
 from pathlib import Path
+
+global FILE_PATH 
+FILE_PATH = Path(__file__).parent / "translator.db"
+
+class DatabaseConnection:
+	def __init__(self, database):
+		self.connection = None
+		self.database = database
+
+	def __enter__(self):
+		self.connection = sqlite3.connect(self.database)
+		return self.connection 
+
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		if exc_type or exc_val or exc_tb:
+			pass
+		else:
+			self.connection.commit()
+		
+		self.connection.close()
+
 
 ##### FUNKCJE LOGOWANIA/REJESTRACJI #####
 def log_in(credentials):
@@ -30,7 +53,7 @@ def log_in(credentials):
         USERNAME, LOGGED_IN = username, False
 
 
-def register(file_path, auth_data, usernames, credentials):
+def register(usernames):
     with st.form("Rejestracja"):
         st.write("<p style='font-size: 28px;'>Rejestracja</p>", unsafe_allow_html=True)
         username = st.text_input("Nazwa użytkownika")
@@ -45,22 +68,20 @@ def register(file_path, auth_data, usernames, credentials):
             st.error("Nazwa użytkownika jest już zajęta")
             st.stop()
         else:
-            auth_data[username] = stauth.Hasher(passwords=[password]).generate()
-            with file_path.open("wb") as file:
-                pickle.dump(auth_data, file)
+            with DatabaseConnection(FILE_PATH) as conn:
+                cursor = conn.cursor()
+                hashed_password = stauth.Hasher(passwords=[password]).generate()[0]
+                cursor.execute(f"INSERT INTO Users (username, hashed_password) VALUES (?, ?)", (username, hashed_password,))
             st.success(f"Rejestracja jako {username} udana. Teraz proszę się zalogować.")
 
     
 def enter(action):
-    file_path = Path(__file__).parent / "auth.pkl"
-    if file_path.exists():
-        with file_path.open("rb") as file:
-            auth_data = pickle.load(file)
-            usernames = list(auth_data.keys())
-            passwords = [auth_data[username][0] for username in usernames]
-    else:
-        auth_data = {}
-        usernames, passwords = [], []
+    with DatabaseConnection(FILE_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Users")
+        user_data = cursor.fetchall()
+        usernames = [row[0] for row in user_data]
+        passwords = [row[1] for row in user_data]
 
     credentials = {"usernames":{}}
     for un, name, pw in zip(usernames, usernames, passwords):
@@ -68,10 +89,48 @@ def enter(action):
         credentials["usernames"].update({un:user_dict})
    
     if action == "Register":
-        register(file_path, auth_data, usernames, credentials)
+        register(usernames)
     elif action == "Login":
         log_in(credentials)
 
+
+##### ZAPISYWANIE HISTORII #####
+from streamlit_extras.stoggle import stoggle
+def display_row(h):
+    col1, col2 = st.columns([0.8, 0.2])
+    with col1:
+        st.write(f"{h[0]}")
+    with col2:
+        st.write(f"{h[4]} → {h[5]}")
+    st.success(f"{h[2]} ➡️ {h[3]}")
+    st.write("---")
+
+
+def view_history(username):
+    st.header("Historia tłumaczeń")
+    st.markdown("---")
+    with DatabaseConnection(FILE_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM History WHERE username='{username}' ORDER BY ROWID DESC")
+        history = cursor.fetchall()
+    
+    for h in history[:3]:
+        display_row(h)
+    if len(history)>3:
+        toggle = tog.st_toggle_switch("Pokaż więcej", active_color="#173928", track_color='#265f42', key="toggle_switch")
+        if toggle:
+            for h in history[3:]:
+                display_row(h)
+
+def save_history(username, transcription, translation, og_lang, output_lang, date):
+    with DatabaseConnection(FILE_PATH) as conn:
+        cursor = conn.cursor()
+        # weryfikacja, czy pojawiło się nowe tłumaczenie
+        cursor.execute(f"SELECT transcription, translation FROM History WHERE username='{username}' ORDER BY ROWID DESC LIMIT 1")
+        last_row = cursor.fetchone()
+        if last_row==None or last_row[0]+last_row[1]!=transcription+translation:
+            cursor.execute(f"INSERT INTO History (date, username, transcription, translation, og_lang, output_lang) VALUES (?, ?, ?, ?, ?, ?)",
+                        (date, username, transcription, translation, og_lang, output_lang,))
 
 
 ##### FUNKCJE TŁUMACZENIA #####
@@ -94,7 +153,6 @@ def text2speech(text, language):
     audio_stream = BytesIO()
     tts.write_to_fp(audio_stream)
     audio_stream.seek(0)
-    #play(AudioSegment.from_mp3(audio_stream))
     return AudioSegment.from_mp3(audio_stream)
 
 
@@ -203,12 +261,14 @@ def main():
     if wav_audio_data is not None:
         st.write('**Oryginalny tekst:**')
         with st.spinner("Transkrybowanie tekstu..."):
-            st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
+            transcription = transcribe(wav_audio_data, lang=langdict[og_lang])
+            st.write(transcription, unsafe_allow_html=True)
         try:
             st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
             with st.spinner("Tłumaczenie tekstu..."):
                 translation = transcribe(wav_audio_data, lang=langdict[output_lang])
                 st.write(translation, unsafe_allow_html=True)
+                save_history(USERNAME, transcription, translation, og_lang, output_lang, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 sound = text2speech(translation, langdict[output_lang])
                 if st.button('🔊'):
                     play(sound)
@@ -229,15 +289,12 @@ if __name__ == '__main__':
     with tab2:
         enter(action="Register")
     with tab3:
-        if not LOGGED_IN:
-            st.warning("Proszę zalogować się, aby użyć tłumacza")
-        else:
+        if LOGGED_IN:
             main()
-    with tab4:
-        if not LOGGED_IN:
-            st.warning("Proszę zalogować się, aby mieć dostęp do historii")
         else:
-            st.write('HISTORIA')
-
-
-# TODO z jakiegoś powodu przy wylogowaniu odtwarza się dźwięk
+            st.warning("Proszę zalogować się, aby użyć tłumacza")
+    with tab4:
+        if LOGGED_IN:
+            view_history(USERNAME)
+        else:
+            st.warning("Proszę zalogować się, aby mieć dostęp do historii")
