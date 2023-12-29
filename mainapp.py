@@ -95,7 +95,6 @@ def enter(action):
 
 
 ##### ZAPISYWANIE HISTORII #####
-from streamlit_extras.stoggle import stoggle
 def display_row(h):
     col1, col2 = st.columns([0.8, 0.2])
     with col1:
@@ -113,7 +112,9 @@ def view_history(username):
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM History WHERE username='{username}' ORDER BY ROWID DESC")
         history = cursor.fetchall()
-    
+    if len(history)==0:
+        st.warning("Brak historii tłumaczeń")
+        st.stop()
     for h in history[:3]:
         display_row(h)
     if len(history)>3:
