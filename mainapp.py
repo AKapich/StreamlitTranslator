@@ -8,12 +8,78 @@ from pydub.playback import play
 from io import BytesIO
 import streamlit as st
 
+import streamlit_authenticator as stauth
+import pickle
+from pathlib import Path
+
+##### FUNKCJE LOGOWANIA/REJESTRACJI #####
+def log_in(credentials):
+    global LOGGED_IN, USERNAME 
+    authenticator = stauth.Authenticate(credentials, 'translator_cookie', 'translator_signature_key', cookie_expiry_days=7)
+    name, auth_status, username = authenticator.login("Login", "main")
+
+    if auth_status:
+        st.success(f"Zalogowany jako {username}")
+        authenticator.logout("Wyloguj", "sidebar")
+        USERNAME, LOGGED_IN = username, True
+    else:
+        if username!='':
+            st.error(f"Nieprawidłowe hasło dla użytkownika {username}")
+        USERNAME, LOGGED_IN = username, False
+
+
+def register(file_path, auth_data, usernames, credentials):
+    global LOGGED_IN, USERNAME
+    with st.form("Rejestracja"):
+        st.write("<p style='font-size: 28px;'>Rejestracja</p>", unsafe_allow_html=True)
+        username = st.text_input("Nazwa użytkownika")
+        password = st.text_input("Hasło", type="password")
+        password2 = st.text_input("Powtórz hasło", type="password")
+        register = st.form_submit_button()
+    if register:
+        if password != password2:
+            st.error("Podane hasła różnią się od siebie")
+            st.stop()
+        elif username in usernames:
+            st.error("Nazwa użytkownika jest już zajęta")
+            st.stop()
+        else:
+            auth_data[username] = stauth.Hasher(passwords=[password]).generate()
+            with file_path.open("wb") as file:
+                pickle.dump(auth_data, file)
+            st.success(f"Rejestracja jako {username} udana. Teraz proszę się zalogować.")
+
+    
+def enter(action):
+    file_path = Path(__file__).parent / "auth.pkl"
+    if file_path.exists():
+        with file_path.open("rb") as file:
+            auth_data = pickle.load(file)
+            usernames = list(auth_data.keys())
+            passwords = [auth_data[username][0] for username in usernames]
+    else:
+        auth_data = {}
+        usernames, passwords = [], []
+
+    credentials = {"usernames":{}}
+    for un, name, pw in zip(usernames, usernames, passwords):
+        user_dict = {"name":name,"password":pw}
+        credentials["usernames"].update({un:user_dict})
+   
+    if action == "Register":
+        register(file_path, auth_data, usernames, credentials)
+    elif action == "Login":
+        log_in(credentials)
+
+
+
+##### FUNKCJE TŁUMACZENIA #####
 @st.cache_resource()
 def load_model():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     return pipeline("automatic-speech-recognition", model="openai/whisper-large", device=device)
-
 pipe = load_model()
+
 
 @st.cache_data
 def transcribe(audio, lang='pl'):
@@ -108,14 +174,15 @@ def main():
 
 
     with st.sidebar:
+        st.write('---')
         st.title("Ustawienia językowe")
         og_lang = st.selectbox("Wybierz język wejściowy: ", langdict.keys(), 38)
         output_lang = st.selectbox("Wybierz język wyjściowy:", langdict.keys(), 13)
         st.markdown("---")
         st.write("Tłumacz stworzony przez:")
         st.write("[Tymoteusz Kwieciński](https://github.com/Fersoil)")
-        st.write("[Michał Matejczuk](https://github.com/matejczukm)")
         st.write("[Aleks Kapich](https://github.com/AKapich)")
+        st.write("[Michał Matejczuk](https://github.com/matejczukm)")
         
 
     if option =='Mikrofon':
@@ -139,8 +206,27 @@ def main():
             translation = transcribe(wav_audio_data, lang=langdict[output_lang])
             st.write(translation, unsafe_allow_html=True)
             text2speech(translation, langdict[output_lang])
-    
+
 
 
 if __name__ == '__main__':
-    main()
+    global LOGGED_IN
+    global USERNAME
+    LOGGED_IN = False
+    USERNAME = None
+    tab1, tab2, tab3, tab4 = st.tabs(["✍🏻 Rejestracja", "🔑 Login", "🔊 Tłumacz", "📄 Historia"])
+
+    with tab1:
+        enter(action="Register")
+    with tab2:
+        enter(action="Login")
+    with tab3:
+        if not LOGGED_IN:
+            st.warning("Proszę zalogować się, aby użyć tłumacza")
+        else:
+            main()
+    with tab4:
+        if not LOGGED_IN:
+            st.warning("Proszę zalogować się, aby mieć dostęp do historii")
+        else:
+            st.write('HISTORIA')
