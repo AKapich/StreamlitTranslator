@@ -204,13 +204,16 @@ def main():
         st.write('**Oryginalny tekst:**')
         with st.spinner("Transkrybowanie tekstu..."):
             st.write(transcribe(wav_audio_data, lang=langdict[og_lang]), unsafe_allow_html=True)
-        st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
-        with st.spinner("Tłumaczenie tekstu..."):
-            translation = transcribe(wav_audio_data, lang=langdict[output_lang])
-            st.write(translation, unsafe_allow_html=True)
-            sound = text2speech(translation, langdict[output_lang])
-            if st.button('🔊'):
-                play(sound)
+        try:
+            st.write(f'**Tłumaczenie na {output_lang.lower()}:**')
+            with st.spinner("Tłumaczenie tekstu..."):
+                translation = transcribe(wav_audio_data, lang=langdict[output_lang])
+                st.write(translation, unsafe_allow_html=True)
+                sound = text2speech(translation, langdict[output_lang])
+                if st.button('🔊'):
+                    play(sound)
+        except AssertionError:
+            st.error('Nie udało się przetłumaczyć tekstu. Spróbuj ponownie.')
 
 
 
@@ -219,12 +222,12 @@ if __name__ == '__main__':
     global USERNAME
     LOGGED_IN = False
     USERNAME = None
-    tab1, tab2, tab3, tab4 = st.tabs(["✍🏻 Rejestracja", "🔑 Login", "🔊 Tłumacz", "📄 Historia"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🔑 Login", "✍🏻 Rejestracja", "🔊 Tłumacz", "📄 Historia"])
 
     with tab1:
-        enter(action="Register")
-    with tab2:
         enter(action="Login")
+    with tab2:
+        enter(action="Register")
     with tab3:
         if not LOGGED_IN:
             st.warning("Proszę zalogować się, aby użyć tłumacza")
