@@ -5,5 +5,4 @@ transformers
 streamlit-mic-recorder
 gtts
 pydub
-pydub.playback
 streamlit_authenticator
