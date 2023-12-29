@@ -6,12 +6,16 @@ from gtts import gTTS
 from pydub import AudioSegment
 from pydub.playback import play
 from io import BytesIO
+import streamlit as st
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-pipe = pipeline(
-    "automatic-speech-recognition", model="openai/whisper-large", device=device
-)
+@st.cache_resource()
+def load_model():
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    return pipeline("automatic-speech-recognition", model="openai/whisper-large", device=device)
 
+pipe = load_model()
+
+@st.cache_data
 def transcribe(audio, lang='pl'):
     outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "transcribe", "language": f"{lang}"})
     return outputs["text"]
@@ -135,6 +139,7 @@ def main():
             translation = transcribe(wav_audio_data, lang=langdict[output_lang])
             st.write(translation, unsafe_allow_html=True)
             text2speech(translation, langdict[output_lang])
+    
 
 
 if __name__ == '__main__':
