@@ -138,7 +138,7 @@ def save_history(username, transcription, translation, og_lang, output_lang, dat
 @st.cache_resource(show_spinner=False)
 def load_model():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    return pipeline("automatic-speech-recognition", model="openai/whisper-large", device=device)
+    return pipeline("automatic-speech-recognition", model="openai/whisper-tiny", device=device)
 pipe = load_model()
 
 
