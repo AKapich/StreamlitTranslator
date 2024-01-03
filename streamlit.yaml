@@ -63,7 +63,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: simple-web-server
+  name: streamlit-app
   namespace: user-fersoil
   annotations:
     kubernetes.io/ingress.class: nginx
@@ -78,4 +78,4 @@ spec:
             service:
               name: streamlit-fersoil
               port:
-                number: 8080
+                number: 4180
