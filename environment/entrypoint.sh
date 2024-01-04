@@ -23,9 +23,9 @@ stopRunningProcess() {
 
 trap stopRunningProcess EXIT TERM
 
-source ${VIRTUAL_ENV}/bin/activate
+conda activate ${VIRTUAL_ENV}
 
-streamlit run ${HOME}/app/streamlit_app.py &
+streamlit run ${HOME}/app/mainapp.py &
 APP_ID=${!}
 
 wait ${APP_ID}

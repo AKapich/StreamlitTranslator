@@ -9,7 +9,7 @@ import io
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 pipe = pipeline(
-    "automatic-speech-recognition", model="openai/whisper-medium", device=device
+    "automatic-speech-recognition", model="openai/whisper-tiny", device=device
 )
 
 def transcribe(audio, lang='pl'):

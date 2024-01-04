@@ -8,16 +8,26 @@ RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Mamba
     bash /tmp/miniconda.sh -b -p /opt/conda
 
 COPY environment/entrypoint.sh /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
 
+
+ENV VIRTUAL_ENV=prod
 COPY environment/env.yaml environment/install_env.sh /tmp/
 RUN bash /tmp/install_env.sh
 
 COPY environment/requirements.txt environment/install_pip.sh /tmp/
 RUN bash /tmp/install_pip.sh
 
-WORKDIR /repo
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid 1000 -ms /bin/bash appuser
 
-COPY mainapp.py /repo/mainapp.py
+USER appuser
+
+WORKDIR /home/appuser
+
+COPY app /home/appuser/app
+
+EXPOSE 8501
 
 VOLUME /database
+
+ENTRYPOINT ["/entrypoint.sh"]
