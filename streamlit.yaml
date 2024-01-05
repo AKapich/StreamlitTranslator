@@ -16,11 +16,9 @@ spec:
       labels:
         app: streamlit
     spec:
-      imagePullSecrets:
-        - name: xlungs-pull-akira-test-pull-secret-2
       containers:
         - name: streamlit
-          image: quay.mi2.ai/tkwiecinski/environment:streamlit-example
+          image: tkwiecinski/streamlit_translator:v0.0.3
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
