@@ -1,0 +1,9 @@
+streamlit-audiorec
+streamlit
+torch
+transformers
+streamlit-mic-recorder
+gtts
+pydub
+streamlit_authenticator
+streamlit_toggle

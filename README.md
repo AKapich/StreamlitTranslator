@@ -1,5 +1,4 @@
-# Streamlit Tłumacz
-
+# [Tłumacz Speech2Speech](https://huggingface.co/spaces/AKapich/AudioTranslator)
 Aplikacja webowa przeznaczona do tłumaczenia z dźwięku, umożliwiająca bezpośrednie tłumaczenie z użyciem mikrofonu użytkownika oraz tłumaczenie wgranych plików audio o rozmiarach do 200MB.
 Umożliwia ona ponadto wybór wielu języków.
 
