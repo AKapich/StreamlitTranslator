@@ -15,7 +15,7 @@ import sqlite3
 from pathlib import Path
 
 global FILE_PATH 
-FILE_PATH = Path(__file__).parent  / "translator.db"
+FILE_PATH = Path("/volume")  / "translator.db"
 
 class DatabaseConnection:
 	def __init__(self, database):
