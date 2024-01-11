@@ -9,7 +9,7 @@ spec:
   volumeMode: Filesystem
   resources:
     requests:
-      storage: 50Gi
+      storage: 5Gi
   storageClassName: zfs-rs128k
 ---
 apiVersion: apps/v1
@@ -24,15 +24,17 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      www: "true"
       app: streamlit
   template:
     metadata:
       labels:
+        www: "true"
         app: streamlit
     spec:
       containers:
         - name: streamlit
-          image: tkwiecinski/streamlit_translator:v0.0.3
+          image: tkwiecinski/streamlit_translator:v0.1.2
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
@@ -54,10 +56,10 @@ spec:
           resources:
             limits:
               cpu: 1
-              memory: 2Gi
+              memory: 5Gi
             requests:
-              cpu: 100m
-              memory: 745Mi
+              cpu: 1
+              memory: 1Gi
       automountServiceAccountToken: false
       volumes:
         - name: database
@@ -77,7 +79,7 @@ spec:
     - name: streamlit-port
       protocol: TCP
       port: 8501
-      targetPort: 4180
+      targetPort: 80
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -97,4 +99,4 @@ spec:
             service:
               name: streamlit-fersoil
               port:
-                number: 4180
+                number: 80
