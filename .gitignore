@@ -190,4 +190,5 @@ venv/
 
 
 # database
-# volume/
+volume/
+volume/translator.db

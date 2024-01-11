@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
         - name: streamlit
-          image: tkwiecinski/streamlit_translator:v0.1.2
+          image: tkwiecinski/streamlit_translator:v1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
@@ -78,8 +78,8 @@ spec:
   ports:
     - name: streamlit-port
       protocol: TCP
-      port: 8501
-      targetPort: 80
+      port: 80
+      targetPort: 8501
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
