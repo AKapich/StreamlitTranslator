@@ -34,6 +34,9 @@ spec:
     spec:
       containers:
         - name: streamlit
+          env:
+            - name: MODEL_SIZE
+              value: "medium"
           image: tkwiecinski/streamlit_translator:v1.0.0
           imagePullPolicy: Always
           ports:
