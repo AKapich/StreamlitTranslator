@@ -187,3 +187,8 @@ fabric.properties
 # Virtual Environment
 venv
 venv/
+
+
+# database
+volume/
+volume/translator.db

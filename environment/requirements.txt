@@ -3,7 +3,8 @@ streamlit
 torch
 transformers
 streamlit-mic-recorder
+scipy
 gtts
 pydub
-pydub.playback
 streamlit_authenticator
+streamlit_toggle

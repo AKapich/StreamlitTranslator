@@ -13,9 +13,12 @@ import  streamlit_toggle as tog
 import streamlit_authenticator as stauth
 import sqlite3
 from pathlib import Path
+import os
 
 global FILE_PATH 
-FILE_PATH = Path(__file__).parent / "translator.db"
+FILE_PATH = Path("/volume") / "database" / "translator.db"
+MODEL_SIZE = os.getenv("MODEL_SIZE", "tiny")
+
 
 class DatabaseConnection:
 	def __init__(self, database):
@@ -138,7 +141,7 @@ def save_history(username, transcription, translation, og_lang, output_lang, dat
 @st.cache_resource(show_spinner=False)
 def load_model():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    return pipeline("automatic-speech-recognition", model="openai/whisper-tiny", device=device)
+    return pipeline("automatic-speech-recognition", model=f"openai/whisper-{MODEL_SIZE}", device=device)
 pipe = load_model()
 
 
@@ -271,8 +274,12 @@ def main():
                 st.write(translation, unsafe_allow_html=True)
                 save_history(USERNAME, transcription, translation, og_lang, output_lang, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 sound = text2speech(translation, langdict[output_lang])
+
+                tmp_filepath = "/tmp/output.wav"
+                sound.export(tmp_filepath, format="wav")
+                
                 if st.button('🔊'):
-                    play(sound)
+                    st.audio(tmp_filepath)
         except AssertionError:
             st.error('Nie udało się przetłumaczyć tekstu. Spróbuj ponownie.')
 
